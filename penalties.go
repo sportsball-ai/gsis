@@ -69,7 +69,7 @@ const (
 	FoulCodeUseOfHelmet                FoulCode = "UOH"
 )
 
-var foulCodes = map[string]FoulCode{
+var FoulCodesByDescription = map[string]FoulCode{
 	"chop block":                            FoulCode("CHB"),
 	"illegal substitution":                  FoulCode("ILS"),
 	"clipping":                              FoulCode("CLP"),
@@ -194,7 +194,7 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 		}
 
 		// Add foul code info
-		if code, ok := foulCodes[strings.ReplaceAll(part, "-", " ")]; ok {
+		if code, ok := FoulCodesByDescription[strings.ReplaceAll(part, "-", " ")]; ok {
 			newPenalty.FoulCode = code
 		}
 
