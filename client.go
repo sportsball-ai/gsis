@@ -2,11 +2,13 @@ package gsis
 
 import (
 	"context"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,10 @@ type Client struct {
 	// The URL of the entry domain. By default this is the URL with the "https://www." replaced by
 	// "https://entry.".
 	EntryURL string
+
+	// The URL of the services domain. By default this is the URL with the "https://www." replaced by
+	// "https://services.".
+	ServicesURL string
 }
 
 func (c *Client) url() string {
@@ -34,6 +40,16 @@ func (c *Client) entryURL() string {
 		return c.EntryURL
 	} else if url := c.url(); strings.HasPrefix(url, "https://www.") {
 		return "https://entry." + strings.TrimPrefix(url, "https://www.")
+	} else {
+		return url
+	}
+}
+
+func (c *Client) servicesURL() string {
+	if c.ServicesURL != "" {
+		return c.ServicesURL
+	} else if url := c.url(); strings.HasPrefix(url, "https://www.") {
+		return "https://services." + strings.TrimPrefix(url, "https://www.")
 	} else {
 		return url
 	}
@@ -148,6 +164,37 @@ func (c *Client) GetTeamLogoSVG(clubCode string) ([]byte, error) {
 	}
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+func (c *Client) GetPlayFeedJSON(gameKey int, token string) (json.RawMessage, error) {
+	req, err := http.NewRequest("GET", strings.TrimSuffix(c.servicesURL(), "/")+"/GSISClockSituation/PlayFeed/"+strconv.Itoa(gameKey), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+	req.Header.Set("token", token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %v", resp.StatusCode)
+	}
+
+	// for some reason the response json is encoded into a json string
+	var body string
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, fmt.Errorf("error decoding response body: %w", err)
+	}
+	var data struct {
+		PlayFeed json.RawMessage
+	}
+	if err := json.Unmarshal([]byte(body), &data); err != nil {
+		return nil, fmt.Errorf("error decoding response body: %w", err)
+	}
+	return data.PlayFeed, nil
 }
 
 func (c *Client) OpenSignalRClient(logger logrus.FieldLogger) *SignalRClient {
