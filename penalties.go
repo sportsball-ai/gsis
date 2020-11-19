@@ -134,11 +134,6 @@ var FoulCodesByDescription = map[string]FoulCode{
 	"lowering the head to initiate contact": FoulCode("UOH"),
 }
 
-type PenaltyPlayerInfo struct {
-	Team         string
-	JerseyNumber string
-}
-
 type OffsettingPenalty struct {
 	FoulCode     FoulCode
 	Team         string
@@ -159,7 +154,7 @@ type PenaltyInfo struct {
 	FoulCode        FoulCode
 	Status          PenaltyStatus
 	Team            string
-	Player          PenaltyPlayerInfo
+	JerseyNumber    string
 	EnforcementSpot PenaltyEnforcementSpot
 	EnforcedAt      *YardLine
 	Distance        int
@@ -229,10 +224,7 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 				if len(number) < 2 || !unicode.IsDigit(rune(number[1])) {
 					number = "0" + number
 				}
-				newPenalty.Player = PenaltyPlayerInfo{
-					Team:         teamAbbreviation,
-					JerseyNumber: number,
-				}
+				newPenalty.JerseyNumber = number
 			}
 		}
 
