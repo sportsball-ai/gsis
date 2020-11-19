@@ -160,6 +160,24 @@ type StatFileGameAttributes struct {
 	ReplayOfficial StatFileOfficials `xml:",attr"`
 }
 
+func (a StatFileGameAttributes) Officials() []StatFileOfficial {
+	ret := []StatFileOfficial{}
+	for _, officials := range []StatFileOfficials{
+		a.Referee,
+		a.Umpire,
+		a.HeadLinesman,
+		a.DownJudge,
+		a.LineJudge,
+		a.FieldJudge,
+		a.SideJudge,
+		a.BackJudge,
+		a.ReplayOfficial,
+	} {
+		ret = append(ret, officials.Officials()...)
+	}
+	return ret
+}
+
 type StatFileOfficial struct {
 	FirstName    string
 	LastName     string
