@@ -1,0 +1,18 @@
+name: Push
+on: [push]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.15
+      id: go
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Test
+      run: |
+        go test -v -race ./...
+        go vet
