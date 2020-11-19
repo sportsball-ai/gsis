@@ -10,6 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Many of these have "previous" for the enforcement spot, when technically the penalty is
+// enforced from elsewhere. The GSIS Guide to Events and Attributes explains why:
+//
+// "Note that although Previous Spot is a term borrowed from the Official Rules of NFL Football,
+// we do not always use it in the same sense as the officials. In some cases (not too often), we
+// will say that a penalty is enforced from the Previous Spot in a case where the officials
+// would not.  The most common such case is Defensive Pass Interference.  Technically, this
+// penalty is enforced at the spot of the foul. But statistically (to get the yardage right), we
+// want to consider this penalty as enforced from the Previous Spot." - GSIS Guide to Events and
+// Attributes
 func TestParsePlayDescriptionPenalties(t *testing.T) {
 	f, err := os.Open("testdata/signalr-stats.json")
 	require.NoError(t, err)
@@ -220,6 +230,60 @@ func TestParsePlayDescriptionPenalties(t *testing.T) {
 			Status:       PenaltyStatusOffsetting,
 			Team:         "LA",
 			JerseyNumber: "50",
+		}},
+
+		"PENALTY on BUF-29-K.Johnson, Face Mask (15 Yards), 10 yards, enforced at BUF 20 - No Play.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeFacemask,
+			Team:            "BUF",
+			JerseyNumber:    "29",
+			EnforcementSpot: PenaltyEnforcementSpotPrevious,
+			EnforcedAt:      NewYardLine("BUF", 20),
+			Distance:        10,
+		}},
+		"(13:01) (Shotgun) PENALTY on PIT-90-T.Watt, Neutral Zone Infraction, 5 yards, enforced at BUF 32 - No Play.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeNeutralZoneInfraction,
+			Team:            "PIT",
+			JerseyNumber:    "90",
+			EnforcementSpot: PenaltyEnforcementSpotPrevious,
+			EnforcedAt:      NewYardLine("BUF", 32),
+			Distance:        5,
+		}},
+		"PENALTY on WAS-32-J.Moreland, Roughing the Kicker, 6 yards, enforced at WAS 12 - No Play.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeRoughingTheKicker,
+			Team:            "WAS",
+			JerseyNumber:    "32",
+			EnforcementSpot: PenaltyEnforcementSpotPrevious,
+			EnforcedAt:      NewYardLine("WAS", 12),
+			Distance:        6,
+		}},
+		"PENALTY on BUF-57-L.Alexander, Illegal Block Above the Waist, 10 yards, enforced at BUF 28.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeIllegalBlockAboveTheWaist,
+			Team:            "BUF",
+			JerseyNumber:    "57",
+			EnforcementSpot: PenaltyEnforcementSpotOther,
+			EnforcedAt:      NewYardLine("BUF", 28),
+			Distance:        10,
+		}},
+		"PENALTY on KC-26-Dam.Williams, Taunting, 15 yards, enforced between downs.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeTaunting,
+			Team:            "KC",
+			JerseyNumber:    "26",
+			EnforcementSpot: PenaltyEnforcementSpotSucceeding,
+			Distance:        15,
+		}},
+		"PENALTY on CIN-23-B.Webb, Defensive Pass Interference, 4 yards, enforced at CIN 5 - No Play.": []PenaltyInfo{{
+			Status:          PenaltyStatusAccepted,
+			FoulCode:        FoulCodeDefensivePassInterference,
+			Team:            "CIN",
+			JerseyNumber:    "23",
+			EnforcementSpot: PenaltyEnforcementSpotPrevious,
+			EnforcedAt:      NewYardLine("CIN", 5),
+			Distance:        4,
 		}},
 	} {
 		assert.Equal(t, expected, ParsePlayDescriptionPenalties(desc), desc)

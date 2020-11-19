@@ -192,6 +192,8 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 		// 3. Yards OR offsetting OR declined ("5 yards", "offsetting", "declined")
 		// 4. Enforcement spot ("enforced at la 7 - no play.")
 
+		part = strings.TrimSuffix(part, ".")
+
 		// Remove GSIS noise section
 		if part == "penalty enforced" {
 			continue
@@ -235,7 +237,6 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 		if strings.HasPrefix(part, "enforced at ") {
 			yardLineString := strings.TrimPrefix(part, "enforced at ")
 			yardLineString = strings.Split(yardLineString, " - ")[0]
-			yardLineString = strings.TrimSuffix(yardLineString, ".")
 			parts := strings.Split(yardLineString, " ")
 			if number, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
 				l := &YardLine{
@@ -257,7 +258,7 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 			}
 		}
 
-		if strings.HasSuffix(strings.TrimSuffix(part, "."), "no play") {
+		if strings.HasSuffix(part, "no play") {
 			newPenalty.EnforcementSpot = PenaltyEnforcementSpotPrevious
 		}
 
