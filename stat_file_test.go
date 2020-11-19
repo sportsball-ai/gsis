@@ -79,27 +79,41 @@ func TestStatFile_Update(t *testing.T) {
 		statFile.Update(&update)
 	}
 
+	finalXML, err := ioutil.ReadFile("testdata/2019-SF-SEA/2019/REG/17/58155/GSISGameStats.xml")
+	require.NoError(t, err)
+	var finalStatFileFromXML *StatFile
+	require.NoError(t, xml.Unmarshal(finalXML, &finalStatFileFromXML))
+
 	finalJSON, err := ioutil.ReadFile("testdata/2019-SF-SEA/2019/REG/17/58155/signalr-stats.json")
 	require.NoError(t, err)
-	var finalStatFile *StatFile
-	require.NoError(t, json.Unmarshal(finalJSON, &finalStatFile))
-
+	var finalStatFileFromJSON *StatFile
+	require.NoError(t, json.Unmarshal(finalJSON, &finalStatFileFromJSON))
 	// SignalR doesn't seem to emit the down judge correctly
-	statFile.GameAttributes.DownJudge = ""
+	finalStatFileFromJSON.GameAttributes.DownJudge = "McKenzie, Dana (8)"
+	// SignalR also doesn't do nullified stats correctly
+	finalStatFileFromJSON.PlayStatNullified = statFile.PlayStatNullified
 
 	for _, p := range statFile.Play {
-		// XML files seem to include newlines where SignalR JSON just uses spaces
+		// the incremental stat XML files seem to include newlines where the other files just uses spaces
 		p.PlayDescription = strings.ReplaceAll(p.PlayDescription, "\n", " ")
 		p.PlayDescriptionWithJerseyNumbers = strings.ReplaceAll(p.PlayDescriptionWithJerseyNumbers, "\n", " ")
 	}
 
-	assert.Equal(t, finalStatFile.CumeStatHeader, statFile.CumeStatHeader)
-	assert.Equal(t, finalStatFile.Play, statFile.Play)
-	assert.ElementsMatch(t, finalStatFile.PlayStat, statFile.PlayStat)
-	assert.Equal(t, finalStatFile.HomeTeamStats, statFile.HomeTeamStats)
-	assert.Equal(t, finalStatFile.GameAttributes, statFile.GameAttributes)
-	assert.Equal(t, finalStatFile.VisitorTeamStats, statFile.VisitorTeamStats)
-	assert.Equal(t, finalStatFile.ScoringSummary, statFile.ScoringSummary)
+	for name, expected := range map[string]*StatFile{
+		"XML":  finalStatFileFromXML,
+		"JSON": finalStatFileFromJSON,
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, expected.CumeStatHeader, statFile.CumeStatHeader)
+			assert.Equal(t, expected.Play, statFile.Play)
+			assert.Equal(t, expected.PlayStat, statFile.PlayStat)
+			assert.Equal(t, expected.PlayStatNullified, statFile.PlayStatNullified)
+			assert.Equal(t, expected.HomeTeamStats, statFile.HomeTeamStats)
+			assert.Equal(t, expected.GameAttributes, statFile.GameAttributes)
+			assert.Equal(t, expected.VisitorTeamStats, statFile.VisitorTeamStats)
+			assert.Equal(t, expected.ScoringSummary, statFile.ScoringSummary)
 
-	assert.Equal(t, finalStatFile, statFile)
+			assert.Equal(t, expected, statFile)
+		})
+	}
 }

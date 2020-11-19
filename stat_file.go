@@ -65,13 +65,16 @@ func (sb *StringBool) UnmarshalJSON(data []byte) error {
 }
 
 type StatFile struct {
-	CumeStatHeader   *StatFileCumeStatHeader
-	Play             []*StatFilePlay
-	PlayStat         []StatFilePlayStat
-	HomeTeamStats    *StatFileTeamStats
-	GameAttributes   *StatFileGameAttributes
-	VisitorTeamStats *StatFileTeamStats
-	ScoringSummary   []*StatFileScoringSummaryEvent
+	CumeStatHeader    *StatFileCumeStatHeader
+	Play              []*StatFilePlay
+	PlayStat          []StatFilePlayStat
+	PlayStatNullified []StatFilePlayStat
+	HomeTeamStats     *StatFileTeamStats
+	FieldGoals        *StatFileFieldGoals
+	GameAttributes    *StatFileGameAttributes
+	VisitorTeamStats  *StatFileTeamStats
+	ScoringSummary    []*StatFileScoringSummaryEvent
+	Punts             *StatFilePunts
 }
 
 // Update updates the StatFile based on a new one. This is useful for GSIS's incremental STATXML
@@ -83,10 +86,13 @@ func (f *StatFile) Update(update *StatFile) {
 	f.HomeTeamStats = update.HomeTeamStats
 	f.VisitorTeamStats = update.VisitorTeamStats
 	f.GameAttributes = update.GameAttributes
+	f.FieldGoals = update.FieldGoals
+	f.Punts = update.Punts
 
 	if len(update.Play) > 1 {
 		f.Play = update.Play
 		f.PlayStat = update.PlayStat
+		f.PlayStatNullified = update.PlayStatNullified
 	} else if len(update.Play) == 1 {
 		p := update.Play[0]
 
@@ -98,6 +104,7 @@ func (f *StatFile) Update(update *StatFile) {
 					break
 				}
 			}
+
 			n := 0
 			for _, existing := range f.PlayStat {
 				if existing.PlayID != p.PlayID {
@@ -106,6 +113,16 @@ func (f *StatFile) Update(update *StatFile) {
 				}
 			}
 			f.PlayStat = f.PlayStat[:n]
+
+			n = 0
+			for _, existing := range f.PlayStatNullified {
+				if existing.PlayID != p.PlayID {
+					f.PlayStatNullified[n] = existing
+					n += 1
+				}
+			}
+			f.PlayStatNullified = f.PlayStatNullified[:n]
+
 			return
 		}
 
@@ -128,15 +145,29 @@ func (f *StatFile) Update(update *StatFile) {
 			}
 			f.PlayStat = f.PlayStat[:n]
 			f.PlayStat = append(f.PlayStat, update.PlayStat...)
+
+			n = 0
+			for _, existing := range f.PlayStatNullified {
+				if existing.PlayID != p.PlayID {
+					f.PlayStatNullified[n] = existing
+					n += 1
+				}
+			}
+			f.PlayStatNullified = f.PlayStatNullified[:n]
+			f.PlayStatNullified = append(f.PlayStatNullified, update.PlayStatNullified...)
 		} else {
 			f.Play = append(f.Play, p)
 			sort.Slice(f.Play, func(i, j int) bool {
 				return f.Play[i].PlaySeq < f.Play[j].PlaySeq
 			})
 			f.PlayStat = append(f.PlayStat, update.PlayStat...)
+			f.PlayStatNullified = append(f.PlayStatNullified, update.PlayStatNullified...)
 		}
 		sort.SliceStable(f.PlayStat, func(i, j int) bool {
 			return f.PlayStat[i].PlayID < f.PlayStat[j].PlayID
+		})
+		sort.SliceStable(f.PlayStatNullified, func(i, j int) bool {
+			return f.PlayStatNullified[i].PlayID < f.PlayStatNullified[j].PlayID
 		})
 	}
 }
@@ -503,8 +534,23 @@ const (
 	PlayTypeEndGame           = 66
 )
 
+type StatFileFieldGoals struct {
+	VisitorFGAttempts StringInt `xml:",attr"`
+	VisitorFGMade     StringInt `xml:",attr"`
+	HomeFGAttempts    StringInt `xml:",attr"`
+	HomeFGMade        StringInt `xml:",attr"`
+}
+
+type StatFilePunts struct {
+	VisitorPunts     StringInt `xml:",attr"`
+	VisitorPuntYards StringInt `xml:",attr"`
+	HomePunts        StringInt `xml:",attr"`
+	HomePuntYards    StringInt `xml:",attr"`
+}
+
 type StatFilePlay struct {
 	ClockTime                        GameTime   `xml:",attr"`
+	EndQuarterPlay                   StringInt  `xml:",attr"`
 	Down                             StringInt  `xml:",attr"`
 	Quarter                          StringInt  `xml:",attr"`
 	YardsToGo                        StringInt  `xml:",attr"`
@@ -521,6 +567,9 @@ type StatFilePlay struct {
 
 	// Non-zero (not necessarily 1) when the play is deleted.
 	PlayDeleted StringInt `xml:",attr"`
+
+	// Time remaining in the quarter at the end of the play
+	EndClockTime GameTime `xml:",attr"`
 }
 
 type StatFileScoringSummaryEvent struct {
