@@ -2,6 +2,7 @@ package gsis
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -138,11 +139,30 @@ type PenaltyPlayerInfo struct {
 	JerseyNumber string
 }
 
+type OffsettingPenalty struct {
+	FoulCode     FoulCode
+	Team         string
+	JerseyNumber string
+}
+
+type PenaltyEnforcementSpot int
+
+const (
+	PenaltyEnforcementSpotNone PenaltyEnforcementSpot = iota
+	PenaltyEnforcementSpotPrevious
+	PenaltyEnforcementSpotDeadBall
+	PenaltyEnforcementSpotSucceeding
+	PenaltyEnforcementSpotOther
+)
+
 type PenaltyInfo struct {
-	FoulCode FoulCode
-	Status   PenaltyStatus
-	Team     string
-	Player   PenaltyPlayerInfo
+	FoulCode        FoulCode
+	Status          PenaltyStatus
+	Team            string
+	Player          PenaltyPlayerInfo
+	EnforcementSpot PenaltyEnforcementSpot
+	EnforcedAt      *YardLine
+	Distance        int
 }
 
 type PenaltyStatus string
@@ -214,6 +234,39 @@ func ParsePlayDescriptionPenalties(description string) []PenaltyInfo {
 					JerseyNumber: number,
 				}
 			}
+		}
+
+		if part == "enforced between downs" {
+			newPenalty.EnforcementSpot = PenaltyEnforcementSpotSucceeding
+		}
+
+		if strings.HasPrefix(part, "enforced at ") {
+			yardLineString := strings.TrimPrefix(part, "enforced at ")
+			yardLineString = strings.Split(yardLineString, " - ")[0]
+			yardLineString = strings.TrimSuffix(yardLineString, ".")
+			parts := strings.Split(yardLineString, " ")
+			if number, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+				l := &YardLine{
+					number: &number,
+				}
+				if len(parts) > 1 {
+					team := strings.ToUpper(parts[0])
+					l.team = &team
+				}
+				newPenalty.EnforcedAt = l
+				newPenalty.EnforcementSpot = PenaltyEnforcementSpotOther
+			}
+		}
+
+		if strings.HasSuffix(part, " yards") {
+			yardsString := strings.TrimSuffix(part, " yards")
+			if n, err := strconv.Atoi(yardsString); err == nil {
+				newPenalty.Distance = n
+			}
+		}
+
+		if strings.HasSuffix(strings.TrimSuffix(part, "."), "no play") {
+			newPenalty.EnforcementSpot = PenaltyEnforcementSpotPrevious
 		}
 
 		// Update status if necessary

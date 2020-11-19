@@ -471,6 +471,13 @@ type YardLine struct {
 	number *int
 }
 
+func NewYardLine(team string, number int) *YardLine {
+	return &YardLine{
+		team:   &team,
+		number: &number,
+	}
+}
+
 func (l *YardLine) Team() *string {
 	return l.team
 }
