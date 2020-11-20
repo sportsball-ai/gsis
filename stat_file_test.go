@@ -22,11 +22,20 @@ func TestStatFile(t *testing.T) {
 	var stats StatFile
 	require.NoError(t, json.NewDecoder(f).Decode(&stats))
 
-	f, err = os.Open("testdata/2020-CAR-KC/GSISGameStats.xml")
+	files, err := ioutil.ReadDir("testdata/games")
 	require.NoError(t, err)
-	defer f.Close()
+	for _, f := range files {
+		if f.IsDir() {
+			t.Run(f.Name(), func(t *testing.T) {
+				f, err := os.Open(filepath.Join("testdata/games", f.Name(), "GSISGameStats.xml"))
+				require.NoError(t, err)
+				defer f.Close()
 
-	require.NoError(t, xml.NewDecoder(f).Decode(&stats))
+				var stats StatFile
+				require.NoError(t, xml.NewDecoder(f).Decode(&stats))
+			})
+		}
+	}
 }
 
 func TestStatFileOfficials(t *testing.T) {
