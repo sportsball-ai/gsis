@@ -45,6 +45,7 @@ type SignalRConnection struct {
 
 	invocationMutex    sync.Mutex
 	invocationChannels map[int]chan *SignalRServerMessage
+	invocationsClosed  bool
 	nextInvocationId   int
 }
 
@@ -71,7 +72,7 @@ func (c *SignalRConnection) readLoop() {
 	for {
 		_, p, err := c.conn.ReadMessage()
 		if err != nil {
-			if !websocket.IsCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway) {
+			if !websocket.IsCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
 				select {
 				case <-c.close:
 				default:
@@ -106,7 +107,7 @@ func (c *SignalRConnection) writeLoop() {
 		c.conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
 
 		if err := c.conn.WritePreparedMessage(msg); err != nil {
-			if !websocket.IsCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway) && err != websocket.ErrCloseSent {
+			if !websocket.IsCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway, websocket.CloseNormalClosure) && err != websocket.ErrCloseSent {
 				c.logger.Error(fmt.Errorf("websocket write error: %w", err))
 			}
 			return
@@ -148,6 +149,13 @@ func (c *SignalRConnection) beginClosing() {
 func (c *SignalRConnection) finishClosing() {
 	<-c.readLoopDone
 	<-c.writeLoopDone
+	c.invocationMutex.Lock()
+	defer c.invocationMutex.Unlock()
+	c.invocationsClosed = true
+	for _, ch := range c.invocationChannels {
+		close(ch)
+	}
+	c.invocationChannels = nil
 }
 
 func (c *SignalRConnection) Close() error {
@@ -187,8 +195,14 @@ type SignalRServerMessage struct {
 	R json.RawMessage
 }
 
+var ErrSignalRConnectionClosed = fmt.Errorf("signalr connection closed")
+
 func (c *SignalRConnection) Invoke(ctx context.Context, hub, method string, args ...interface{}) (json.RawMessage, error) {
 	c.invocationMutex.Lock()
+	if c.invocationsClosed {
+		c.invocationMutex.Unlock()
+		return nil, ErrSignalRConnectionClosed
+	}
 	ch := make(chan *SignalRServerMessage, 1)
 	id := c.nextInvocationId
 	for {
@@ -234,7 +248,10 @@ func (c *SignalRConnection) Invoke(ctx context.Context, hub, method string, args
 	}
 
 	select {
-	case resp := <-ch:
+	case resp, ok := <-ch:
+		if !ok {
+			return nil, ErrSignalRConnectionClosed
+		}
 		return resp.R, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
