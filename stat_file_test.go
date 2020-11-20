@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,6 +22,10 @@ func TestStatFile(t *testing.T) {
 
 	var stats StatFile
 	require.NoError(t, json.NewDecoder(f).Decode(&stats))
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	files, err := ioutil.ReadDir("testdata/games")
 	require.NoError(t, err)
@@ -130,5 +135,22 @@ func TestStatFile_Update(t *testing.T) {
 
 			assert.Equal(t, expected, statFile)
 		})
+	}
+}
+
+func TestGameTime(t *testing.T) {
+	for input, expected := range map[string]time.Duration{
+		"01:02": time.Minute + 2*time.Second,
+		"0102":  time.Minute + 2*time.Second,
+		"102":   time.Minute + 2*time.Second,
+		"1:12":  time.Minute + 12*time.Second,
+		":12":   12 * time.Second,
+		"12":    12 * time.Second,
+	} {
+		buf, err := json.Marshal(input)
+		require.NoError(t, err)
+		var actual GameTime
+		require.NoError(t, json.Unmarshal(buf, &actual), err)
+		assert.Equal(t, expected, actual.Duration())
 	}
 }
