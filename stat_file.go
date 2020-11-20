@@ -42,6 +42,37 @@ func (si *StringInt) UnmarshalJSON(data []byte) error {
 	}
 }
 
+// Signalr doesn't know what a float is. It just uses strings for everything. -_-
+type StringFloat float64
+
+func (si *StringFloat) UnmarshalJSON(data []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	switch v := v.(type) {
+	case float64:
+		*si = StringFloat(v)
+		return nil
+	case int:
+		*si = StringFloat(v)
+		return nil
+	case string:
+		if v == "" {
+			*si = 0
+		} else if n, err := strconv.ParseFloat(v, 64); err != nil {
+			return fmt.Errorf("error unmarshaling string float: %w", err)
+		} else {
+			*si = StringFloat(n)
+		}
+		return nil
+	case nil:
+		return nil
+	default:
+		return fmt.Errorf("unexpected string float type: %T", v)
+	}
+}
+
 // Signalr doesn't know what a boolean is. It just uses strings for everything. -_-
 type StringBool bool
 
@@ -157,12 +188,12 @@ func (f *StatFile) Update(update *StatFile) {
 			f.PlayStatNullified = append(f.PlayStatNullified, update.PlayStatNullified...)
 		} else {
 			f.Play = append(f.Play, p)
-			sort.Slice(f.Play, func(i, j int) bool {
-				return f.Play[i].PlaySeq < f.Play[j].PlaySeq
-			})
 			f.PlayStat = append(f.PlayStat, update.PlayStat...)
 			f.PlayStatNullified = append(f.PlayStatNullified, update.PlayStatNullified...)
 		}
+		sort.Slice(f.Play, func(i, j int) bool {
+			return f.Play[i].PlaySeq < f.Play[j].PlaySeq
+		})
 		sort.SliceStable(f.PlayStat, func(i, j int) bool {
 			return f.PlayStat[i].PlayID < f.PlayStat[j].PlayID
 		})
@@ -556,21 +587,21 @@ type StatFilePunts struct {
 }
 
 type StatFilePlay struct {
-	ClockTime                        GameTime   `xml:",attr"`
-	EndQuarterPlay                   StringInt  `xml:",attr"`
-	Down                             StringInt  `xml:",attr"`
-	Quarter                          StringInt  `xml:",attr"`
-	YardsToGo                        StringInt  `xml:",attr"`
-	PlayClock                        StringInt  `xml:",attr"`
-	PlayID                           StringInt  `xml:",attr"`
-	PlaySeq                          StringInt  `xml:",attr"`
-	PlayType                         StringInt  `xml:",attr"`
-	PlayDescription                  string     `xml:",attr"`
-	PlayDescriptionWithJerseyNumbers string     `xml:",attr"`
-	TimeOfDay                        string     `xml:",attr"`
-	IsScoringPlay                    StringBool `xml:",attr"`
-	YardLine                         YardLine   `xml:",attr"`
-	PossessionTeam                   string     `xml:",attr"`
+	ClockTime                        GameTime    `xml:",attr"`
+	EndQuarterPlay                   StringInt   `xml:",attr"`
+	Down                             StringInt   `xml:",attr"`
+	Quarter                          StringInt   `xml:",attr"`
+	YardsToGo                        StringInt   `xml:",attr"`
+	PlayClock                        StringInt   `xml:",attr"`
+	PlayID                           StringInt   `xml:",attr"`
+	PlaySeq                          StringFloat `xml:",attr"`
+	PlayType                         StringInt   `xml:",attr"`
+	PlayDescription                  string      `xml:",attr"`
+	PlayDescriptionWithJerseyNumbers string      `xml:",attr"`
+	TimeOfDay                        string      `xml:",attr"`
+	IsScoringPlay                    StringBool  `xml:",attr"`
+	YardLine                         YardLine    `xml:",attr"`
+	PossessionTeam                   string      `xml:",attr"`
 
 	// Non-zero (not necessarily 1) when the play is deleted.
 	PlayDeleted StringInt `xml:",attr"`

@@ -21,6 +21,12 @@ func TestStatFile(t *testing.T) {
 
 	var stats StatFile
 	require.NoError(t, json.NewDecoder(f).Decode(&stats))
+
+	f, err = os.Open("testdata/2020-CAR-KC/GSISGameStats.xml")
+	require.NoError(t, err)
+	defer f.Close()
+
+	require.NoError(t, xml.NewDecoder(f).Decode(&stats))
 }
 
 func TestStatFileOfficials(t *testing.T) {
