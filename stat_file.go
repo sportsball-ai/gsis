@@ -675,7 +675,10 @@ func (t *GameTime) unmarshal(s string) error {
 		return fmt.Errorf("unsupported clock time string: %s", s)
 	}
 	newTime := GameTime{}
-	if v, err := strconv.Atoi(minutes); err != nil {
+	if minutes == "" {
+		zero := 0
+		newTime.minutes = &zero
+	} else if v, err := strconv.Atoi(minutes); err != nil {
 		return fmt.Errorf("error unmarshaling game time minutes: %w", err)
 	} else {
 		newTime.minutes = &v
