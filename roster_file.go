@@ -6,6 +6,7 @@ type RosterFile struct {
 }
 
 type RosterFileGameKey struct {
+	GameKey       int    `xml:",attr"`
 	GameDate      string `xml:",attr"`
 	HomeClubKey   int    `xml:",attr"`
 	VisitClubKey  int    `xml:",attr"`
