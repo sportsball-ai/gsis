@@ -2,6 +2,7 @@ package gsis
 
 import (
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -70,6 +71,9 @@ const (
 	FoulCodeUseOfHelmet                FoulCode = "UOH"
 )
 
+// Returns a foul code based on its description text. Multiple descriptions may correspond to a
+// single foul code, so if you need the canonical description for a foul code, use
+// (FoulCode).Description.
 var FoulCodesByDescription = map[string]FoulCode{
 	"chop block":                            FoulCode("CHB"),
 	"illegal substitution":                  FoulCode("ILS"),
@@ -132,6 +136,39 @@ var FoulCodesByDescription = map[string]FoulCode{
 	"illegal shift":                         FoulCode("ISH"),
 	"use of helmet":                         FoulCode("UOH"),
 	"lowering the head to initiate contact": FoulCode("UOH"),
+}
+
+var foulCodeDescriptions map[FoulCode]string
+
+var FoulCodes []FoulCode
+
+func init() {
+	foulCodeDescriptions = map[FoulCode]string{}
+	for desc, code := range FoulCodesByDescription {
+		if _, ok := foulCodeDescriptions[code]; !ok {
+			FoulCodes = append(FoulCodes, code)
+		}
+		switch code {
+		case FoulCodeHorseCollar:
+			foulCodeDescriptions[code] = "horse collar"
+		case FoulCodeFacemask:
+			foulCodeDescriptions[code] = "facemask"
+		case FoulCodeUseOfHelmet:
+			foulCodeDescriptions[code] = "use of helmet"
+		default:
+			if _, ok := foulCodeDescriptions[code]; ok {
+				panic("foul code with multiple descriptions must have explicit description case: " + string(code))
+			}
+			foulCodeDescriptions[code] = desc
+		}
+	}
+	sort.Slice(FoulCodes, func(i, j int) bool {
+		return FoulCodes[i] < FoulCodes[j]
+	})
+}
+
+func (c FoulCode) Description() string {
+	return foulCodeDescriptions[c]
 }
 
 type OffsettingPenalty struct {
