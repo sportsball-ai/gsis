@@ -38,6 +38,15 @@ func TestStatFile(t *testing.T) {
 
 				var stats StatFile
 				require.NoError(t, xml.NewDecoder(f).Decode(&stats))
+
+				// Confirm all plays are in play sequence order
+				for idx, p := range stats.Play {
+					if idx == 0 {
+						continue
+					}
+					previousPlaySeq := stats.Play[idx-1].PlaySeq
+					assert.Greater(t, float64(p.PlaySeq), float64(previousPlaySeq))
+				}
 			})
 		}
 	}
