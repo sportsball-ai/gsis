@@ -358,10 +358,15 @@ type StatFileCumeStatHeader struct {
 
 // https://www.nflgsis.com/gsis/documentation/Partners/StatIDs.html
 const (
+	StatIDRushingYardsMinus                 = 1
 	StatIDPuntBlocked                       = 2
 	StatIDFirstDownRushing                  = 3
 	StatIDFirstDownPassing                  = 4
 	StatIDFirstDownPenalty                  = 5
+	StatIDThirdDownAttemptConverted         = 6
+	StatIDThirdDownAttemptFailed            = 7
+	StatIDFourthDownAttemptConverted        = 8
+	StatIDFourthDownAttemptFailed           = 9
 	StatIDRushingYards                      = 10
 	StatIDRushingYardsTD                    = 11
 	StatIDRushingYardsNoRush                = 12
@@ -389,6 +394,10 @@ const (
 	StatIDPuntReturnYardsTD                 = 34
 	StatIDPuntReturnYardsNoReturn           = 35
 	StatIDPuntReturnYardsTDNoReturn         = 36
+	StatIDPuntOutOfBounds                   = 37
+	StatIDPuntDownedNoReturn                = 38
+	StatIDPuntFairCatch                     = 39
+	StatIDPuntTouchbackNoReturn             = 40
 	StatIDKickoffYards                      = 41
 	StatIDKickoffInside20                   = 42
 	StatIDKickoffIntoEndZone                = 43
@@ -397,6 +406,9 @@ const (
 	StatIDKickoffReturnYardsTD              = 46
 	StatIDKickoffReturnYardsNoReturn        = 47
 	StatIDKickoffReturnYardsTDNoReturn      = 48
+	StatIDKickoffOutOfBounds                = 49
+	StatIDKickoffFairCatch                  = 50
+	StatIDKickoffTouchback                  = 51
 	StatIDFumbleForced                      = 52
 	StatIDFumbleNotForced                   = 53
 	StatIDFumbleOutOfBounds                 = 54
@@ -423,25 +435,48 @@ const (
 	StatID2PointPassFailed                  = 78
 	StatIDSoloTackle                        = 79
 	StatIDAssistedTackle                    = 80
+	StatIDHalfTackle                        = 81
 	StatIDTackleAssist                      = 82
 	StatIDSackYardsDefense                  = 83
 	StatIDHalfSackYardsDefense              = 84
 	StatIDPassDefensed                      = 85
+	StatIDPuntBlockedDefense                = 86
+	StatIDExtraPointBlockedDefense          = 87
+	StatIDFieldGoalBlockedDefense           = 88
 	StatIDSafetyDefense                     = 89
+	StatIDHalfSafetyDefense                 = 90
 	StatIDForcedFumble                      = 91
 	StatIDPenalty                           = 93
+	StatIDTackledForLoss                    = 95
 	StatIDExtraPointSafety                  = 96
 	StatID2PointRushSafety                  = 99
 	StatID2PointPassSafety                  = 100
+	StatIDKickoffKickDowned                 = 102
 	StatIDSackYardsNoSack                   = 103
+	StatID2PointPassReceptionGood           = 104
+	StatID2PointPassReceptionFailed         = 105
+	StatIDFumbleLost                        = 106
 	StatIDOwnKickoffRecovery                = 107
 	StatIDOwnKickoffRecoveryTD              = 108
 	StatIDQuarterbackHit                    = 110
+	StatIDPassLengthCompletion              = 111
 	StatIDPassLengthNoCompletion            = 112
+	StatIDYardageGainedAfterCatch           = 113
 	StatIDPassTarget                        = 115
+	StatIDTackleForLoss                     = 120
 	StatIDLongFieldGoalYards                = 201
+	StatIDExtraPointDeuce                   = 211
 	StatID2PointRushDeuce                   = 212
 	StatID2PointPassDeuce                   = 213
+	StatIDExtraPointAborted                 = 301
+	StatIDHalfTackleForLoss                 = 401
+	StatIDTackleForLossYardage              = 402
+	StatIDDefensive2PointAttempts           = 403
+	StatIDDefensive2PointConversions        = 404
+	StatIDDefensiveExtraPointAttempts       = 405
+	StatIDDefensiveExtraPointConversions    = 406
+	StatIDKickoffLength                     = 410
+	StatID2PointReturnGood                  = 420
 )
 
 type StatFilePlayStat struct {
