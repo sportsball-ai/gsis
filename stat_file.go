@@ -106,6 +106,7 @@ type StatFile struct {
 	VisitorTeamStats  *StatFileTeamStats
 	ScoringSummary    []*StatFileScoringSummaryEvent
 	Punts             *StatFilePunts
+	XMLName           struct{} `xml:"CumulativeStatisticsFile",json:"-"`
 }
 
 // Update updates the StatFile based on a new one. This is useful for GSIS's incremental STATXML
@@ -500,6 +501,17 @@ func (y *StatYards) Int() int {
 	return *y.Value
 }
 
+func (y StatYards) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	value := ""
+	if y.Value != nil {
+		value = strconv.Itoa(*y.Value)
+	}
+	return xml.Attr{
+		Name:  name,
+		Value: value,
+	}, nil
+}
+
 func (y *StatYards) unmarshal(s string) error {
 	if s == "" {
 		return nil
@@ -535,13 +547,7 @@ func (y *StatYards) UnmarshalXMLAttr(attr xml.Attr) error {
 type YardLine struct {
 	team   *string
 	number *int
-}
-
-func NewYardLine(team string, number int) *YardLine {
-	return &YardLine{
-		team:   &team,
-		number: &number,
-	}
+	raw    string
 }
 
 func (l *YardLine) Team() *string {
@@ -562,6 +568,13 @@ func (l *YardLine) String() string {
 	return ""
 }
 
+func (l YardLine) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{
+		Name:  name,
+		Value: l.raw,
+	}, nil
+}
+
 func (l *YardLine) unmarshal(s string) error {
 	if s == "" {
 		*l = YardLine{}
@@ -571,7 +584,9 @@ func (l *YardLine) unmarshal(s string) error {
 	if len(values) > 2 {
 		return fmt.Errorf("expected <= 2 values, found %d", len(values))
 	}
-	newYardLine := YardLine{}
+	newYardLine := YardLine{
+		raw: s,
+	}
 	if len(values) > 1 {
 		newYardLine.team = &values[0]
 	}
@@ -677,6 +692,7 @@ func (f *StatFile) ActualPlays() []*StatFilePlay {
 type GameTime struct {
 	minutes *int
 	seconds *int
+	raw     string
 }
 
 func (t *GameTime) IsNil() bool {
@@ -688,6 +704,13 @@ func (t *GameTime) Duration() time.Duration {
 		return 0
 	}
 	return time.Minute*time.Duration(*t.minutes) + time.Second*time.Duration(*t.seconds)
+}
+
+func (t GameTime) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{
+		Name:  name,
+		Value: t.raw,
+	}, nil
 }
 
 func (t *GameTime) unmarshal(s string) error {
@@ -709,7 +732,9 @@ func (t *GameTime) unmarshal(s string) error {
 	default:
 		return fmt.Errorf("unsupported clock time string: %s", s)
 	}
-	newTime := GameTime{}
+	newTime := GameTime{
+		raw: s,
+	}
 	if minutes == "" {
 		zero := 0
 		newTime.minutes = &zero
