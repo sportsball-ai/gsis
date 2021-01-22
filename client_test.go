@@ -33,9 +33,10 @@ func TestClientIntegration(t *testing.T) {
 	})
 
 	t.Run("GetIncrementalStatFileXML", func(t *testing.T) {
-		statFile, statFileTime, err := c.GetIncrementalStatFile(20191229, "SEA", 100)
+		statFile, number, statFileTime, err := c.GetIncrementalStatFile(20191229, "SEA", 100)
 		require.NoError(t, err)
 		assert.Len(t, statFile.Play, 1)
+		assert.Equal(t, 100, number)
 		assert.Equal(t, time.Date(2019, time.December, 30, 2, 23, 23, 0, time.UTC), statFileTime)
 	})
 
