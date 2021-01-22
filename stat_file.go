@@ -106,7 +106,7 @@ type StatFile struct {
 	VisitorTeamStats  *StatFileTeamStats
 	ScoringSummary    []*StatFileScoringSummaryEvent
 	Punts             *StatFilePunts
-	XMLName           struct{} `xml:"CumulativeStatisticsFile",json:"-"`
+	XMLName           struct{} `xml:"CumulativeStatisticsFile" json:"-"`
 }
 
 // Update updates the StatFile based on a new one. This is useful for GSIS's incremental STATXML
