@@ -10,6 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func NewYardLine(team string, number int) *YardLine {
+	return &YardLine{
+		team:   &team,
+		number: &number,
+	}
+}
+
 // Many of these have "previous" for the enforcement spot, when technically the penalty is
 // enforced from elsewhere. The GSIS Guide to Events and Attributes explains why:
 //

@@ -32,12 +32,11 @@ func TestStatFile(t *testing.T) {
 	for _, f := range files {
 		if f.IsDir() {
 			t.Run(f.Name(), func(t *testing.T) {
-				f, err := os.Open(filepath.Join("testdata/games", f.Name(), "GSISGameStats.xml"))
+				original, err := ioutil.ReadFile(filepath.Join("testdata/games", f.Name(), "GSISGameStats.xml"))
 				require.NoError(t, err)
-				defer f.Close()
 
 				var stats StatFile
-				require.NoError(t, xml.NewDecoder(f).Decode(&stats))
+				require.NoError(t, xml.Unmarshal(original, &stats))
 
 				// Confirm all plays are in play sequence order
 				for idx, p := range stats.Play {
@@ -47,6 +46,13 @@ func TestStatFile(t *testing.T) {
 					previousPlaySeq := stats.Play[idx-1].PlaySeq
 					assert.Greater(t, float64(p.PlaySeq), float64(previousPlaySeq))
 				}
+
+				// Confirm that the files round-trip correctly
+				buf, err := xml.Marshal(stats)
+				require.NoError(t, err)
+				var roundTripped StatFile
+				require.NoError(t, xml.Unmarshal(buf, &roundTripped))
+				assert.Equal(t, stats, roundTripped)
 			})
 		}
 	}
