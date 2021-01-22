@@ -55,30 +55,30 @@ func (c *Client) servicesURL() string {
 	}
 }
 
-func (c *Client) GetIncrementalStatFile(date int, homeClubCode string, number int) (*StatFile, time.Time, error) {
-	buf, t, err := c.GetIncrementalStatFileXML(date, homeClubCode, number)
+func (c *Client) GetIncrementalStatFile(date int, homeClubCode string, number int) (*StatFile, int, time.Time, error) {
+	buf, number, t, err := c.GetIncrementalStatFileXML(date, homeClubCode, number)
 	if err != nil {
-		return nil, t, err
+		return nil, 0, t, err
 	}
 	var statFile StatFile
 	if err := xml.Unmarshal(buf, &statFile); err != nil {
-		return nil, t, fmt.Errorf("error unmarshaling incremental stat file: %w", err)
+		return nil, 0, t, fmt.Errorf("error unmarshaling incremental stat file: %w", err)
 	}
-	return &statFile, t, nil
+	return &statFile, number, t, nil
 }
 
-func (c *Client) GetIncrementalStatFileXML(date int, homeClubCode string, number int) ([]byte, time.Time, error) {
+func (c *Client) GetIncrementalStatFileXML(date int, homeClubCode string, number int) ([]byte, int, time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf(strings.TrimSuffix(c.entryURL(), "/")+"/DataInterfaceServer/%v/%v/STATXML/%v", date, strings.ToUpper(homeClubCode), number), nil)
 	if err != nil {
-		return nil, time.Time{}, fmt.Errorf("error creating incremental stat file request: %w", err)
+		return nil, 0, time.Time{}, fmt.Errorf("error creating incremental stat file request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, time.Time{}, fmt.Errorf("error getting incremental stat file xml: %w", err)
+		return nil, 0, time.Time{}, fmt.Errorf("error getting incremental stat file xml: %w", err)
 	}
 	defer func() {
 		io.Copy(ioutil.Discard, resp.Body)
@@ -86,18 +86,22 @@ func (c *Client) GetIncrementalStatFileXML(date int, homeClubCode string, number
 	}()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, time.Time{}, nil
+		return nil, 0, time.Time{}, nil
 	} else if resp.StatusCode != http.StatusOK {
-		return nil, time.Time{}, fmt.Errorf("unexpected incremental stat file status code: %v", resp.StatusCode)
+		return nil, 0, time.Time{}, fmt.Errorf("unexpected incremental stat file status code: %v", resp.StatusCode)
 	}
 
 	t, err := time.Parse("20060102 150405", resp.Header.Get("gsisfiletimestamp"))
 	if err != nil {
-		return nil, time.Time{}, fmt.Errorf("error parsing gsis file timestamp: %w", err)
+		return nil, 0, time.Time{}, fmt.Errorf("error parsing gsis file timestamp: %w", err)
+	}
+
+	if number == 0 {
+		number, _ = strconv.Atoi(resp.Header.Get("gsisfilenumber"))
 	}
 
 	buf, err := ioutil.ReadAll(resp.Body)
-	return buf, t, err
+	return buf, number, t, err
 }
 
 func (c *Client) GetRosterFile(year int, season string, week, gameKey int) (*RosterFile, error) {
