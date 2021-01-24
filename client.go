@@ -74,10 +74,24 @@ func (c *Client) GetIncrementalStatFileXML(date int, homeClubCode string, number
 
 // Gets an incremental stat file, blocking until it is available.
 func (c *Client) LongPollIncrementalStatFileXML(date int, homeClubCode string, number int, timeoutSeconds int) ([]byte, int, time.Time, error) {
+	return c.longPollIncrementalXML("StatXML", date, homeClubCode, number, timeoutSeconds)
+}
+
+// Gets an incremental roster file, returning immediately if it is unavailable.
+func (c *Client) GetIncrementalRosterFileXML(date int, homeClubCode string, number int) ([]byte, int, time.Time, error) {
+	return c.LongPollIncrementalRosterFileXML(date, homeClubCode, number, 0)
+}
+
+// Gets an incremental roster file, blocking until it is available.
+func (c *Client) LongPollIncrementalRosterFileXML(date int, homeClubCode string, number int, timeoutSeconds int) ([]byte, int, time.Time, error) {
+	return c.longPollIncrementalXML("RosterXML", date, homeClubCode, number, timeoutSeconds)
+}
+
+func (c *Client) longPollIncrementalXML(name string, date int, homeClubCode string, number int, timeoutSeconds int) ([]byte, int, time.Time, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSeconds+10)*time.Second)
 	defer cancel()
 
-	url := fmt.Sprintf(strings.TrimSuffix(c.entryURL(), "/")+"/DataInterfaceServer/%v/%v/STATXML/%v?timeout=%d", date, strings.ToUpper(homeClubCode), number, timeoutSeconds)
+	url := fmt.Sprintf(strings.TrimSuffix(c.entryURL(), "/")+"/DataInterfaceServer/%v/%v/%v/%v?timeout=%d", date, strings.ToUpper(homeClubCode), name, number, timeoutSeconds)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
