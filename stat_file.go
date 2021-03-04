@@ -96,17 +96,18 @@ func (sb *StringBool) UnmarshalJSON(data []byte) error {
 }
 
 type StatFile struct {
-	CumeStatHeader    *StatFileCumeStatHeader
-	Play              []*StatFilePlay
-	PlayStat          []StatFilePlayStat
-	PlayStatNullified []StatFilePlayStat
-	HomeTeamStats     *StatFileTeamStats
-	FieldGoals        *StatFileFieldGoals
-	GameAttributes    *StatFileGameAttributes
-	VisitorTeamStats  *StatFileTeamStats
-	ScoringSummary    []*StatFileScoringSummaryEvent
-	Punts             *StatFilePunts
-	XMLName           struct{} `xml:"CumulativeStatisticsFile" json:"-"`
+	CumulativeStatisticsFile *StatFileCumulativeStatisticsFile
+	CumeStatHeader           *StatFileCumeStatHeader
+	Play                     []*StatFilePlay
+	PlayStat                 []StatFilePlayStat
+	PlayStatNullified        []StatFilePlayStat
+	HomeTeamStats            *StatFileTeamStats
+	FieldGoals               *StatFileFieldGoals
+	GameAttributes           *StatFileGameAttributes
+	VisitorTeamStats         *StatFileTeamStats
+	ScoringSummary           []*StatFileScoringSummaryEvent
+	Punts                    *StatFilePunts
+	XMLName                  struct{} `xml:"CumulativeStatisticsFile" json:"-"`
 }
 
 // Update updates the StatFile based on a new one. This is useful for GSIS's incremental STATXML
@@ -202,6 +203,10 @@ func (f *StatFile) Update(update *StatFile) {
 			return f.PlayStatNullified[i].PlayID < f.PlayStatNullified[j].PlayID
 		})
 	}
+}
+
+type StatFileCumulativeStatisticsFile struct {
+	DateTimeStampUTC time.Time `xml:",attr"`
 }
 
 // A string naming one or more officials. Examples:
