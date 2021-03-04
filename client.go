@@ -1,6 +1,7 @@
 package gsis
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -53,6 +54,81 @@ func (c *Client) servicesURL() string {
 	} else {
 		return url
 	}
+}
+
+type CurrentWeek struct {
+	Season     int
+	SeasonType string
+	Week       int
+}
+
+func (c *Client) GetCurrentWeek() (*CurrentWeek, error) {
+	resp, err := http.Get(strings.TrimSuffix(c.url(), "/") + "/CurrentWeek")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %v", resp.StatusCode)
+	}
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+	ret := &CurrentWeek{}
+	parts := bytes.Split(buf, []byte{0xb8})
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("not enough response fields")
+	} else if ret.Season, err = strconv.Atoi(string(parts[0])); err != nil {
+		return nil, fmt.Errorf("error parsing season: %w", err)
+	} else if ret.Week, err = strconv.Atoi(string(parts[2])); err != nil {
+		return nil, fmt.Errorf("error parsing week: %w", err)
+	}
+	ret.SeasonType = strings.TrimSpace(string(parts[1]))
+	return ret, nil
+}
+
+type ScheduleGame struct {
+	// M/D/Y
+	GameDate        string
+	GameKey         int
+	HomeClubCode    string
+	VisitorClubCode string
+}
+
+func (c *Client) GetSchedule(season int, seasonType string, week int) ([]*ScheduleGame, error) {
+	resp, err := http.Get(strings.TrimSuffix(c.url(), "/") + fmt.Sprintf("/%d/%v/%02d/Schedule", season, seasonType, week))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %v", resp.StatusCode)
+	}
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	ret := []*ScheduleGame{}
+	for _, line := range bytes.Split(buf, []byte{0x0a}) {
+		parts := bytes.Split(line, []byte{0xb8})
+		if len(parts) < 17 {
+			continue
+		}
+		game := &ScheduleGame{
+			GameDate:        string(parts[1]),
+			HomeClubCode:    string(parts[4]),
+			VisitorClubCode: string(parts[11]),
+		}
+		if game.GameKey, err = strconv.Atoi(string(parts[0])); err != nil {
+			return nil, fmt.Errorf("error parsing game key: %w", err)
+		}
+		ret = append(ret, game)
+	}
+	return ret, nil
 }
 
 func (c *Client) GetIncrementalStatFile(date int, homeClubCode string, number int) (*StatFile, int, time.Time, error) {

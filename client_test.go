@@ -53,6 +53,43 @@ func TestClientIntegration(t *testing.T) {
 	})
 }
 
+func TestClient_GetCurrentWeek(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "testdata/CurrentWeek")
+	}))
+	defer s.Close()
+
+	c := &Client{URL: s.URL}
+
+	w, err := c.GetCurrentWeek()
+	require.NoError(t, err)
+
+	assert.Equal(t, &CurrentWeek{
+		Season:     2020,
+		SeasonType: "Post",
+		Week:       4,
+	}, w)
+}
+
+func TestClient_GetSchedule(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "testdata/2019-SF-SEA/2019/REG/17/Schedule")
+	}))
+	defer s.Close()
+
+	c := &Client{URL: s.URL}
+
+	schedule, err := c.GetSchedule(2019, "REG", 17)
+	require.NoError(t, err)
+	require.Len(t, schedule, 16)
+	assert.Equal(t, &ScheduleGame{
+		GameKey:         58155,
+		GameDate:        "12/29/2019",
+		HomeClubCode:    "SEA",
+		VisitorClubCode: "SF",
+	}, schedule[15])
+}
+
 func TestClient_GetPlayFeedJSON(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The API returns a JSON dict encoded as a JSON string. -_-
