@@ -102,7 +102,9 @@ func (c *Client) GetSchedule(season int, seasonType string, week int) ([]*Schedu
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	} else if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %v", resp.StatusCode)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
@@ -110,7 +112,7 @@ func (c *Client) GetSchedule(season int, seasonType string, week int) ([]*Schedu
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
-	var ret []*ScheduleGame
+	ret := []*ScheduleGame{}
 	for _, line := range bytes.Split(buf, []byte{0x0a}) {
 		parts := bytes.Split(line, []byte{0xb8})
 		if len(parts) < 17 {
