@@ -40,6 +40,14 @@ func TestClientIntegration(t *testing.T) {
 		assert.Equal(t, time.Date(2019, time.December, 30, 2, 23, 23, 0, time.UTC), statFileTime)
 	})
 
+	t.Run("GetCumulativeStatFileXML", func(t *testing.T) {
+		statFile, number, statFileTime, err := c.GetCumulativeStatFile(20191229, "SEA")
+		require.NoError(t, err)
+		assert.Len(t, statFile.Play, 167)
+		assert.GreaterOrEqual(t, number, 271)
+		assert.NotEmpty(t, statFileTime)
+	})
+
 	t.Run("GetRosterFile", func(t *testing.T) {
 		rosterFile, err := c.GetRosterFile(2019, "REG", 15, 58120)
 		require.NoError(t, err)

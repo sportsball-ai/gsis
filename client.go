@@ -131,6 +131,55 @@ func (c *Client) GetSchedule(season int, seasonType string, week int) ([]*Schedu
 	return ret, nil
 }
 
+func (c *Client) GetCumulativeStatFile(date int, homeClubCode string) (*StatFile, int, time.Time, error) {
+	buf, number, t, err := c.GetCumulativeStatFileXML(date, homeClubCode)
+	if err != nil {
+		return nil, 0, t, err
+	}
+	var statFile StatFile
+	if err := xml.Unmarshal(buf, &statFile); err != nil {
+		return nil, 0, t, fmt.Errorf("error unmarshaling cumulative stat file: %w", err)
+	}
+	return &statFile, number, t, nil
+}
+
+func (c *Client) GetCumulativeStatFileXML(date int, homeClubCode string) ([]byte, int, time.Time, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	url := fmt.Sprintf(strings.TrimSuffix(c.entryURL(), "/")+"/DataInterfaceServer/%v/%v/gametodate", date, strings.ToUpper(homeClubCode))
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, 0, time.Time{}, fmt.Errorf("error creating cumulative stat file request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, 0, time.Time{}, fmt.Errorf("error getting cumulative stat file xml: %w", err)
+	}
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, 0, time.Time{}, nil
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, 0, time.Time{}, fmt.Errorf("unexpected cumulative stat file status code: %v", resp.StatusCode)
+	}
+
+	t, err := time.Parse("20060102 150405", resp.Header.Get("gsisfiletimestamp"))
+	if err != nil {
+		return nil, 0, time.Time{}, fmt.Errorf("error parsing gsis file timestamp: %w", err)
+	}
+
+	number, _ := strconv.Atoi(resp.Header.Get("gsisfilenumber"))
+
+	buf, err := ioutil.ReadAll(resp.Body)
+	return buf, number, t, err
+}
+
 func (c *Client) GetIncrementalStatFile(date int, homeClubCode string, number int) (*StatFile, int, time.Time, error) {
 	buf, number, t, err := c.GetIncrementalStatFileXML(date, homeClubCode, number)
 	if err != nil {
