@@ -21,3 +21,19 @@ func CommonTeamAbbreviation(clubCode string) string {
 	}
 	return clubCode
 }
+
+var abbreviationToGSISClubCode = map[string]string{}
+
+func init() {
+	for k, v := range gsisClubCodeToCommonAbbreviation {
+		abbreviationToGSISClubCode[v] = k
+	}
+}
+
+// Inverts CommonTeamAbbreviation.
+func TeamClubCode(abbr string) string {
+	if code, ok := abbreviationToGSISClubCode[abbr]; ok {
+		return code
+	}
+	return abbr
+}
