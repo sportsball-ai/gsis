@@ -682,16 +682,24 @@ type StatFileScoringSummaryEvent struct {
 func (f *StatFile) ActualPlays() []*StatFilePlay {
 	ret := make([]*StatFilePlay, 0, len(f.Play))
 	for _, p := range f.Play {
-		if p.PlayDeleted != 0 {
-			continue
+		if p.IsActualPlay() {
+			ret = append(ret, p)
 		}
-		switch p.PlayType {
-		case PlayTypeGame, PlayTypeEndQuarter, PlayTypeComment, PlayTypeEndGame:
-			continue
-		}
-		ret = append(ret, p)
 	}
 	return ret
+}
+
+// Returns true if the play hasn't been deleted and isn't some random thing like commentary or
+// metadata.
+func (p *StatFilePlay) IsActualPlay() bool {
+	if p.PlayDeleted != 0 {
+		return false
+	}
+	switch p.PlayType {
+	case PlayTypeGame, PlayTypeEndQuarter, PlayTypeComment, PlayTypeEndGame:
+		return false
+	}
+	return true
 }
 
 type GameTime struct {
