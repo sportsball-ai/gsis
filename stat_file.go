@@ -360,6 +360,7 @@ type StatFileCumeStatHeader struct {
 	VisitorClubCode string    `xml:",attr"`
 	GameKey         StringInt `xml:",attr"`
 	FileNumber      StringInt `xml:",attr"`
+	GMTOffset       StringInt `xml:",attr"`
 }
 
 // https://www.nflgsis.com/gsis/documentation/Partners/StatIDs.html
